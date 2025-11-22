@@ -54,9 +54,9 @@ dotnet restore
 dotnet run
 ```
 
-The API will be available at `http://localhost:5000`
+The API will be available at `http://localhost:5205`
 
-### 4. Start the Frontend
+### 4. Start the Frontend`
 
 ```bash
 cd frontend

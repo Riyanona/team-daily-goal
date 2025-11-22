@@ -18,20 +18,21 @@ public class StatsService : IStatsService
         var completedGoals = goalsList.Count(g => g.IsCompleted);
         var completionPercentage = totalGoals > 0 ? (double)completedGoals / totalGoals * 100 : 0;
 
-        var moodDistribution = new Dictionary<MoodType, int>
+        var moodDistribution = new Dictionary<int, int>
         {
-            { MoodType.VeryHappy, 0 },
-            { MoodType.Happy, 0 },
-            { MoodType.Neutral, 0 },
-            { MoodType.Sad, 0 },
-            { MoodType.Stressed, 0 }
+            { 1, 0 }, // VeryHappy
+            { 2, 0 }, // Happy
+            { 3, 0 }, // Neutral
+            { 4, 0 }, // Sad
+            { 5, 0 }  // Stressed
         };
 
         foreach (var mood in moods)
         {
-            if (moodDistribution.ContainsKey(mood.MoodType))
+            var moodTypeValue = (int)mood.MoodType;
+            if (moodDistribution.ContainsKey(moodTypeValue))
             {
-                moodDistribution[mood.MoodType]++;
+                moodDistribution[moodTypeValue]++;
             }
         }
 

@@ -33,7 +33,7 @@ public record MoodDto(
 
 public record TeamStatsDto(
     double CompletionPercentage,
-    Dictionary<MoodType, int> MoodDistribution,
+    Dictionary<int, int> MoodDistribution,
     int TotalGoals,
     int CompletedGoals
 );
