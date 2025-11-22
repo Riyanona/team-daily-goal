@@ -1,0 +1,443 @@
+openapi: 3.0.3
+info:
+  title: Team Daily Goal Tracker API
+  version: 1.0.0
+  description: |
+    RESTful API for tracking team members' daily goals and mood states.
+    Provides endpoints for viewing team status, adding goals, updating moods,
+    and retrieving aggregated team statistics.
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+paths:
+  /api/dashboard:
+    get:
+      summary: Get complete dashboard data
+      description: |
+        Retrieves all team members with their goals and moods for a specific date,
+        plus aggregated team statistics. Optimized endpoint for initial page load.
+      operationId: getDashboard
+      tags:
+        - Dashboard
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Date to retrieve data for (defaults to today)
+          schema:
+            type: string
+            format: date
+            example: "2025-11-20"
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '400':
+          description: Invalid date format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/team-members:
+    get:
+      summary: Get all team members
+      description: Retrieves list of all team members (without goals or moods)
+      operationId: getTeamMembers
+      tags:
+        - Team Members
+      responses:
+        '200':
+          description: Team members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMemberDto'
+
+  /api/goals:
+    post:
+      summary: Create a new goal
+      description: Adds a goal for a team member on today's date
+      operationId: createGoal
+      tags:
+        - Goals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoalRequest'
+      responses:
+        '201':
+          description: Goal created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/goals/{id}/complete:
+    patch:
+      summary: Mark a goal as complete
+      description: Updates the IsCompleted flag for a goal to true
+      operationId: completeGoal
+      tags:
+        - Goals
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Goal ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Goal marked as complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalDto'
+        '404':
+          description: Goal not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/moods:
+    put:
+      summary: Update or create mood
+      description: |
+        Sets the mood for a team member on today's date.
+        If a mood already exists for today, it will be updated (upsert).
+      operationId: updateMood
+      tags:
+        - Moods
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMoodRequest'
+      responses:
+        '200':
+          description: Mood updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoodDto'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Team member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/stats:
+    get:
+      summary: Get team statistics
+      description: |
+        Retrieves aggregated statistics for a specific date including
+        goal completion percentage and mood distribution.
+      operationId: getStats
+      tags:
+        - Statistics
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Date to calculate stats for (defaults to today)
+          schema:
+            type: string
+            format: date
+            example: "2025-11-20"
+      responses:
+        '200':
+          description: Statistics calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamStatsDto'
+        '400':
+          description: Invalid date format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    TeamMemberDto:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Alice Johnson"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-20T10:00:00Z"
+
+    GoalDto:
+      type: object
+      required:
+        - id
+        - teamMemberId
+        - description
+        - isCompleted
+        - date
+        - createdAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        teamMemberId:
+          type: integer
+          example: 1
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Complete project proposal"
+        isCompleted:
+          type: boolean
+          example: false
+        date:
+          type: string
+          format: date
+          example: "2025-11-20"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-20T09:30:00Z"
+
+    MoodDto:
+      type: object
+      required:
+        - id
+        - teamMemberId
+        - moodType
+        - date
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        teamMemberId:
+          type: integer
+          example: 1
+        moodType:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: |
+            1 = Very Happy (😀)
+            2 = Happy (😊)
+            3 = Neutral (😐)
+            4 = Sad (😞)
+            5 = Stressed (😤)
+          example: 2
+        date:
+          type: string
+          format: date
+          example: "2025-11-20"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-20T11:45:00Z"
+
+    TeamStatsDto:
+      type: object
+      required:
+        - completionPercentage
+        - moodDistribution
+        - totalGoals
+        - completedGoals
+      properties:
+        completionPercentage:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          description: Percentage of completed goals (0-100)
+          example: 66.67
+        moodDistribution:
+          type: object
+          description: Count of team members in each mood category
+          properties:
+            "1":
+              type: integer
+              description: Very Happy count
+              example: 2
+            "2":
+              type: integer
+              description: Happy count
+              example: 5
+            "3":
+              type: integer
+              description: Neutral count
+              example: 3
+            "4":
+              type: integer
+              description: Sad count
+              example: 1
+            "5":
+              type: integer
+              description: Stressed count
+              example: 1
+        totalGoals:
+          type: integer
+          minimum: 0
+          example: 15
+        completedGoals:
+          type: integer
+          minimum: 0
+          example: 10
+
+    DashboardResponse:
+      type: object
+      required:
+        - teamMembers
+        - stats
+        - date
+      properties:
+        teamMembers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberWithDetails'
+        stats:
+          $ref: '#/components/schemas/TeamStatsDto'
+        date:
+          type: string
+          format: date
+          description: Date the data is for
+          example: "2025-11-20"
+
+    TeamMemberWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/TeamMemberDto'
+        - type: object
+          properties:
+            goals:
+              type: array
+              items:
+                $ref: '#/components/schemas/GoalDto'
+            currentMood:
+              oneOf:
+                - $ref: '#/components/schemas/MoodDto'
+                - type: "null"
+
+    CreateGoalRequest:
+      type: object
+      required:
+        - teamMemberId
+        - description
+      properties:
+        teamMemberId:
+          type: integer
+          minimum: 1
+          example: 1
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Complete project proposal"
+
+    UpdateMoodRequest:
+      type: object
+      required:
+        - teamMemberId
+        - moodType
+      properties:
+        teamMemberId:
+          type: integer
+          minimum: 1
+          example: 1
+        moodType:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: |
+            1 = Very Happy (😀)
+            2 = Happy (😊)
+            3 = Neutral (😐)
+            4 = Sad (😞)
+            5 = Stressed (😤)
+          example: 2
+
+    ErrorResponse:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          example: "ValidationError"
+        title:
+          type: string
+          example: "One or more validation errors occurred"
+        status:
+          type: integer
+          example: 400
+        errors:
+          type: object
+          description: Dictionary of field names to error messages
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            description:
+              - "Description cannot be empty"
+        traceId:
+          type: string
+          description: Request trace ID for debugging
+          example: "0HN7GMLQF2K3J:00000001"
+
+tags:
+  - name: Dashboard
+    description: Composite endpoint for dashboard page load
+  - name: Team Members
+    description: Team member management
+  - name: Goals
+    description: Goal creation and completion
+  - name: Moods
+    description: Mood updates
+  - name: Statistics
+    description: Team-level aggregated statistics
