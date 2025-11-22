@@ -176,7 +176,7 @@ npm run build
 
 **Frontend can't reach API:**
 - Check CORS configuration in `Program.cs`
-- Verify API is running on port 5000
+- Verify API is running on port 5205
 - Check Vite proxy configuration in `vite.config.ts`
 
 **NuGet package restore fails:**
